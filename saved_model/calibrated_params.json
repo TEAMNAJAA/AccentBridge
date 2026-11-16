@@ -1,0 +1,5 @@
+{
+  "alpha": 0.15,
+  "hw_weight": 0.22,
+  "gate_threshold": 0.9
+}

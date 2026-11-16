@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AccentBridge Captions — Live Output</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=IBM+Plex+Sans+Thai:wght@500;600&family=Noto+Sans+SC:wght@500&family=Noto+Sans+JP:wght@500&family=Noto+Sans+KR:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page: #000000;
+    --text: #ffffff;
+    --box: rgba(8, 8, 8, 0.82);
+    --accent: #ffd84d;
+    --size: 5.2vh;
+    --safe-x: 10vw;
+    --safe-y: 8vh;
+    --ui-bg: #15171c; --ui-fg: #e9ebf0; --ui-muted: #9aa0ab; --ui-line: #2b2f37; --ui-on: #ffd84d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--page); color: var(--text); overflow: hidden;
+    font-family: "Inter", "IBM Plex Sans Thai", "Noto Sans SC", "Noto Sans JP", "Noto Sans KR", Arial, Helvetica, sans-serif;
+  }
+  body.bg-green { --page: #00b140; }
+  body.bg-transparent { --page: transparent; }
+  body.bg-black { --page: #000000; }
+  body.text-yellow { --text: #ffe14d; --accent: #ffffff; }
+
+  #region {
+    position: fixed; left: var(--safe-x); right: var(--safe-x);
+    bottom: var(--safe-y); display: flex; flex-direction: column; align-items: center;
+    transition: opacity .35s ease;
+  }
+  body.pos-top #region { bottom: auto; top: var(--safe-y); }
+  body.align-left #region { align-items: flex-start; }
+  #region.idle { opacity: 0; }
+  .line {
+    font-size: var(--size); font-weight: 600; line-height: 1.34; letter-spacing: .005em;
+    white-space: pre; max-width: 100%;
+  }
+  .line > span.chip { padding: .05em .34em; border-radius: 6px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  body.style-box .line > span.chip { background: var(--box); }
+  body.style-outline .line { text-shadow:
+      -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+      0 0 8px rgba(0,0,0,.95); }
+  body.style-shadow .line { text-shadow: 0 2px 6px rgba(0,0,0,.88), 0 0 2px rgba(0,0,0,.95); }
+  .w-interim { opacity: .85; color: #b8d4ff; }
+  .orig-line { font-size: calc(var(--size) * 0.62); opacity: .86; margin-bottom: .32em; }
+  body.hl .w-fixed { color: var(--accent); }
+  body.upper .line { text-transform: uppercase; }
+
+  #screen {
+    position: fixed; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none;
+  }
+  body.has-screen #screen { display: block; }
+  body.has-screen.fit-cover #screen { object-fit: cover; }
+  #srcHint { font-size: 12px; color: var(--ui-muted); }
+  #slide {
+    position: fixed; top: 2.2vh; left: 2.4vw; font: 600 1.7vh/1 "Inter", "IBM Plex Sans Thai", Arial, sans-serif;
+    color: var(--text); opacity: .65; display: none;
+  }
+  body.show-slide #slide { display: block; }
+
+  #muteBanner {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(110, 27, 38, 0.92); border: 1px solid #f85149; color: #fff;
+    font: 600 13px/1.2 "Inter", "IBM Plex Sans Thai", sans-serif;
+    padding: 6px 14px; border-radius: 999px; display: none; z-index: 20; cursor: pointer;
+  }
+  body.is-muted #muteBanner { display: inline-block; }
+
+  #gear {
+    position: fixed; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--ui-line); background: var(--ui-bg); color: var(--ui-fg); font-size: 18px;
+    cursor: pointer; opacity: 0; transition: opacity .25s; z-index: 30;
+  }
+  body:hover #gear { opacity: .92; }
+  #gear:focus-visible { opacity: 1; outline: 2px solid var(--ui-on); }
+  #panel {
+    position: fixed; top: 58px; right: 12px; width: 332px; max-height: calc(100vh - 70px); overflow: auto;
+    background: var(--ui-bg); color: var(--ui-fg); border: 1px solid var(--ui-line); border-radius: 12px;
+    padding: 16px; display: grid; gap: 13px; font: 500 13px/1.4 "Inter", "IBM Plex Sans Thai", Arial, sans-serif;
+    box-shadow: 0 18px 40px rgba(0,0,0,.55); z-index: 30;
+  }
+  #panel[hidden] { display: none; }
+  #panel h2 { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ui-muted); }
+  .opt { display: grid; gap: 6px; }
+  .opt > span { color: var(--ui-muted); font-size: 12px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button, .lang-select {
+    flex: 1 1 auto; font: inherit; font-size: 12px; padding: 6px 8px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--ui-line); background: #1c2028; color: var(--ui-fg);
+  }
+  .seg button[aria-pressed="true"] { background: var(--ui-on); border-color: var(--ui-on); color: #111; font-weight: 600; }
+  #muteToggleBtn.muted { background: #6e1b26; border-color: #f85149; color: #fff; font-weight: 600; }
+  .keys { color: var(--ui-muted); font-size: 12px; line-height: 1.6; border-top: 1px solid var(--ui-line); padding-top: 10px; }
+  .keys b { color: var(--ui-fg); font-weight: 600; }
+  #status { font-size: 12px; color: var(--ui-muted); }
+  #status.live { color: #6ee7a8; }
+</style>
+</head>
+<body>
+  <video id="screen" autoplay muted playsinline></video>
+  <div id="slide"></div>
+  <div id="muteBanner" title="คลิกเพื่อเปิดไมค์ต่อ">🔇 ไมค์ปิดชั่วคราวอยู่ (คลิกหรือกด M เพื่อเปิดไมค์)</div>
+  <div id="region" aria-live="polite"></div>
+
+  <button id="gear" type="button" title="ตั้งค่าซับ (H)" aria-controls="panel" aria-expanded="false">⚙</button>
+  <div id="panel" hidden>
+    <h2>Caption Output (CTranslate2)</h2>
+    <div id="status">กำลังเชื่อมต่อเซิร์ฟเวอร์ซับสด…</div>
+
+    <div class="opt"><span>ไมโครโฟน &amp; แปลเป็นภาษา (Translate to)</span>
+      <div class="seg">
+        <button id="muteToggleBtn" type="button">🎙️ ปิดไมค์ชั่วคราว (M)</button>
+      </div>
+      <select id="targetLangSelect" class="lang-select" title="เลือกภาษาที่จะแปลบนหน้าจอซับนี้ได้โดยตรง">
+        <option value="sync">🔄 ซิงก์ตามหน้าผู้นำเสนอ (Sync with Web)</option>
+        <option value="none">🚫 ไม่แปล (แสดงภาษาต้นฉบับ)</option>
+        <option value="en">🇬🇧 English (แปลเป็นอังกฤษ)</option>
+        <option value="th">🇹🇭 ภาษาไทย (แปลเป็นไทย)</option>
+        <option value="zh">🇨🇳 中文 (แปลเป็นจีน)</option>
+        <option value="ja">🇯🇵 日本語 (แปลเป็นญี่ปุ่น)</option>
+        <option value="ko">🇰🇷 한국어 (แปลเป็นเกาหลี)</option>
+        <option value="vi">🇻🇳 Tiếng Việt (เวียดนาม)</option>
+        <option value="id">🇮🇩 Bahasa Indonesia</option>
+        <option value="es">🇪🇸 Español (สเปน)</option>
+        <option value="fr">🇫🇷 Français (ฝรั่งเศส)</option>
+        <option value="de">🇩🇪 Deutsch (เยอรมัน)</option>
+      </select>
+    </div>
+
+    <div class="opt"><span>รูปแบบภาษาในซับ</span>
+      <div class="seg" data-key="show">
+        <button data-v="tr">เฉพาะคำแปล</button>
+        <button data-v="both">สองภาษา</button>
+        <button data-v="orig">เฉพาะต้นฉบับ</button>
+      </div>
+    </div>
+
+    <div class="opt"><span>ภาพด้านหลังซับ (จอ / แอป / แท็บ)</span>
+      <div class="seg"><button id="pickSrc" type="button">เลือกจอหรือแอป…</button><button id="stopSrc" type="button" disabled>หยุดดึงภาพ</button></div>
+      <div class="seg" data-key="fit"><button data-v="contain">พอดีจอ</button><button data-v="cover">เต็มจอ (ครอป)</button></div>
+      <div id="srcHint">ยังไม่ได้เลือก · ซับจะขึ้นบนพื้นหลังที่ตั้งไว้</div>
+    </div>
+
+    <div class="opt"><span>ซับหายไปเมื่อหยุดพูด</span><div class="seg" data-key="idle"><button data-v="1">1 วิ</button><button data-v="2">2 วิ</button><button data-v="3">3 วิ</button><button data-v="4">4 วิ</button><button data-v="0">ไม่หาย</button></div></div>
+    <div class="opt"><span>จำนวนบรรทัด</span><div class="seg" data-key="lines"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button></div></div>
+    <div class="opt"><span>ขนาดตัวอักษร</span><div class="seg" data-key="size"><button data-v="4.2">S</button><button data-v="5.2">M</button><button data-v="6.4">L</button><button data-v="8">XL</button></div></div>
+    <div class="opt"><span>รูปแบบตัวอักษร</span><div class="seg" data-key="style"><button data-v="box">กล่องดำ</button><button data-v="outline">ขอบดำ</button><button data-v="shadow">เงา</button></div></div>
+    <div class="opt"><span>พื้นหลังหน้าต่าง</span><div class="seg" data-key="bg"><button data-v="black">ดำ</button><button data-v="green">เขียว (Chroma)</button><button data-v="transparent">โปร่งใส (OBS)</button></div></div>
+    <div class="opt"><span>ตำแหน่ง</span><div class="seg" data-key="pos"><button data-v="bottom">ล่าง</button><button data-v="top">บน</button></div></div>
+    <div class="opt"><span>จัดแนว</span><div class="seg" data-key="align"><button data-v="center">กลาง</button><button data-v="left">ซ้าย</button></div></div>
+    <div class="opt"><span>สีตัวอักษร</span><div class="seg" data-key="color"><button data-v="white">ขาว</button><button data-v="yellow">เหลือง</button></div></div>
+    <div class="opt"><span>ตัวพิมพ์ (อังกฤษ)</span><div class="seg" data-key="case"><button data-v="normal">ปกติ</button><button data-v="upper">ตัวใหญ่ทั้งหมด</button></div></div>
+    <div class="opt"><span>ไฮไลต์คำสำเนียงเอเชียที่ AI แก้ให้ตรงสไลด์</span><div class="seg" data-key="hl"><button data-v="off">ปิด</button><button data-v="on">เปิด</button></div></div>
+    <div class="opt"><span>แสดงเลขสไลด์มุมจอ</span><div class="seg" data-key="slide"><button data-v="off">ปิด</button><button data-v="on">เปิด</button></div></div>
+    <div class="seg"><button id="clearBtn" type="button">🧹 ล้างซับบนจอ</button><button id="closePanel" type="button">ซ่อนแผงนี้</button></div>
+    <div class="keys"><b>M</b> ปิด/เปิดไมค์ · <b>V</b> เลือกภาพจอ · <b>H / Esc</b> ซ่อนแผงนี้ · <b>F</b> เต็มจอ · <b>C</b> ล้างซับ · <b>B</b> สลับพื้นหลัง · <b>+ / −</b> ขนาดตัวอักษร</div>
+  </div>
+
+<!-- Marker ID informs app.py that native V6 translation/SSE support is already built-in! -->
+<script id="accentbridge-captions-tr-fix">
+  const DEFAULTS = {
+    lines: '2', size: '5.2', style: 'outline', bg: 'black', pos: 'bottom', align: 'center',
+    color: 'white', case: 'normal', hl: 'on', slide: 'off', idle: '3', fit: 'contain',
+    show: 'tr', targetLang: 'sync'
+  };
+  let prefs = { ...DEFAULTS };
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem('ab_caption_prefs_v6') || '{}')); } catch (_) {}
+  if (!['0', '1', '2', '3', '4'].includes(prefs.idle)) prefs.idle = '3';
+
+  const MAX_CHARS = 44;
+  const region = document.getElementById('region');
+  const panel = document.getElementById('panel');
+  const gear = document.getElementById('gear');
+  const statusEl = document.getElementById('status');
+  const targetLangSelect = document.getElementById('targetLangSelect');
+  const muteToggleBtn = document.getElementById('muteToggleBtn');
+
+  // เก็บเฉพาะประโยคปัจจุบัน (1 ประโยคสดใหม่เสมอ ไม่เอาคำเก่ามาต่อท้าย!)
+  let currentSeg = null;         // { id, text, tr, overlayTr, lang, fixed: Set }
+  let interimOrig = '';          // ข้อความต้นฉบับระหว่างพูด
+  let interimTr = '';            // คำแปลสดระหว่างพูด (ไม่โชว์ไทยแวบก่อนอังกฤษ!)
+  let webTargetLang = 'none';
+  let isMuted = false;
+  let clearedSegId = 0, clearedInterim = '';
+  let acronyms = new Set();
+  let lastActivity = 0;
+  let screenStream = null;
+
+  targetLangSelect.value = prefs.targetLang || 'sync';
+
+  function effectiveTargetLang() {
+    if (prefs.targetLang && prefs.targetLang !== 'sync') return prefs.targetLang;
+    return webTargetLang || 'none';
+  }
+
+  function applyPrefs() {
+    const b = document.body;
+    b.className = '';
+    b.classList.add('style-' + prefs.style, 'bg-' + prefs.bg, 'pos-' + prefs.pos, 'align-' + prefs.align);
+    if (prefs.color === 'yellow') b.classList.add('text-yellow');
+    if (prefs.case === 'upper') b.classList.add('upper');
+    if (prefs.hl === 'on') b.classList.add('hl');
+    if (prefs.slide === 'on') b.classList.add('show-slide');
+    if (prefs.fit === 'cover') b.classList.add('fit-cover');
+    if (screenStream) b.classList.add('has-screen');
+    if (isMuted) b.classList.add('is-muted');
+    document.documentElement.style.setProperty('--size', prefs.size + 'vh');
+    document.querySelectorAll('.seg[data-key]').forEach(seg => {
+      seg.querySelectorAll('button').forEach(btn => btn.setAttribute('aria-pressed', String(btn.dataset.v === prefs[seg.dataset.key])));
+    });
+    targetLangSelect.value = prefs.targetLang || 'sync';
+    muteToggleBtn.classList.toggle('muted', isMuted);
+    muteToggleBtn.textContent = isMuted ? '🔇 ไมค์ปิดอยู่ (คลิกเพื่อเปิด · M)' : '🎙️ ปิดไมค์ชั่วคราว (M)';
+    try { localStorage.setItem('ab_caption_prefs_v6', JSON.stringify(prefs)); } catch (_) {}
+    render();
+  }
+
+  const segmenter = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter(undefined, { granularity: 'word' }) : null;
+  function tokenize(text) {
+    if (!text) return [];
+    if (segmenter) return Array.from(segmenter.segment(text), x => x.segment);
+    return text.split(/(\s+)/).filter(Boolean);
+  }
+  function cleanKey(tok) {
+    return (tok || '').toLowerCase().replace(/^[^a-z0-9']+|[^a-z0-9']+$/g, '');
+  }
+  function tidyLatin(tok, sentenceStart) {
+    const m = tok.match(/^([^A-Za-z']*)([A-Za-z']+)([^A-Za-z']*)$/);
+    if (!m) return tok;
+    const pre = m[1], word = m[2], post = m[3];
+    const lw = word.toLowerCase();
+    if (acronyms.has(lw) || (word === word.toUpperCase() && word.length >= 2)) return pre + lw.toUpperCase() + post;
+    if (lw === 'i' || lw.startsWith("i'")) return pre + 'I' + lw.slice(1) + post;
+    const core = sentenceStart ? lw.charAt(0).toUpperCase() + lw.slice(1) : lw;
+    return pre + core + post;
+  }
+  function toTokens(text, cls, fixed, capFirst = true) {
+    let first = capFirst;
+    return tokenize(text).map(t => {
+      if (/^\s+$/.test(t)) return { t: ' ', space: true };
+      const k = cleanKey(t);
+      const out = { t: tidyLatin(t, first), cls: (fixed && k && fixed.has(k)) ? 'w-fixed' : cls };
+      first = false;
+      return out;
+    });
+  }
+
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  function textWidth(str, scale = 1) {
+    const px = window.innerHeight * parseFloat(prefs.size) / 100 * scale;
+    measureCtx.font = `600 ${px}px Inter, "IBM Plex Sans Thai", "Noto Sans SC", Arial, sans-serif`;
+    return measureCtx.measureText(prefs.case === 'upper' ? str.toUpperCase() : str).width;
+  }
+  function buildLines(tokens, scale = 1, maxChars = MAX_CHARS) {
+    const maxW = (region.clientWidth || window.innerWidth * 0.8) * 0.98;
+    const lines = []; let cur = [];
+    const txt = arr => arr.map(x => x.t).join('');
+    for (const tk of tokens) {
+      if (tk.space && !cur.length) continue;
+      const trial = cur.concat(tk);
+      const s = txt(trial).trim();
+      if (!tk.space && cur.length && (s.length > maxChars || textWidth(s, scale) > maxW)) {
+        while (cur.length && cur[cur.length - 1].space) cur.pop();
+        lines.push(cur); cur = [tk];
+      } else cur = trial;
+    }
+    while (cur.length && cur[cur.length - 1].space) cur.pop();
+    if (cur.length) lines.push(cur);
+    return lines;
+  }
+  function tailLine(tokens, scale, maxChars) {
+    const maxW = (region.clientWidth || window.innerWidth * 0.8) * 0.98;
+    const out = [];
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      const trial = [tokens[i], ...out];
+      const s = trial.map(x => x.t).join('').trim();
+      if (out.length && (s.length > maxChars || textWidth(s, scale) > maxW)) break;
+      out.unshift(tokens[i]);
+    }
+    while (out.length && out[0].space) out.shift();
+    return out;
+  }
+  function esc(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+  function lineHtml(line, extraCls = '') {
+    const inner = line.map(w => w.space ? ' ' : (w.cls ? `<span class="${w.cls}">${esc(w.t)}</span>` : esc(w.t))).join('');
+    return `<div class="line ${extraCls}"><span class="chip">${inner}</span></div>`;
+  }
+
+  function render() {
+    if (isMuted) {
+      region.innerHTML = '';
+      return;
+    }
+    const n = parseInt(prefs.lines, 10);
+    const tgt = effectiveTargetLang();
+    const trEnabled = tgt && tgt !== 'none';
+
+    const activeInterim = (interimOrig && interimOrig !== clearedInterim) ? interimOrig : '';
+    const activeSeg = (currentSeg && currentSeg.id > clearedSegId) ? currentSeg : null;
+
+    if (!activeInterim && !activeSeg) {
+      region.innerHTML = '';
+      return;
+    }
+
+    let html = '';
+    // 1) ขณะกำลังพูดประโยคใหม่สดๆ (interim) -> ล้างประโยคเก่าทันที และในโหมด 'เฉพาะคำแปล' ห้ามโชว์ภาษาไทยดิบแวบมาก่อน!
+    if (activeInterim) {
+      if (!trEnabled || prefs.show === 'orig') {
+        html = buildLines(toTokens(activeInterim, 'w-interim', null, true)).slice(-n).map(l => lineHtml(l)).join('');
+      } else if (prefs.show === 'tr') {
+        if (interimTr) {
+          html = buildLines(toTokens(interimTr, 'w-interim', null, true)).slice(-n).map(l => lineHtml(l)).join('');
+        }
+      } else {
+        // สองภาษาสด: บรรทัดบนต้นฉบับตัวเล็ก + บรรทัดล่างคำแปลสดตัวใหญ่
+        const origL = [tailLine(toTokens(activeInterim, 'w-interim', null, true), 0.62, 76)].filter(l => l.length);
+        const trPart = interimTr ? buildLines(toTokens(interimTr, 'w-interim', null, true)).slice(-n).map(l => lineHtml(l)).join('') : '';
+        html = origL.map(l => lineHtml(l, 'orig-line')).join('') + trPart;
+      }
+      region.innerHTML = html;
+      return;
+    }
+
+    // 2) ประโยคที่พูดจบแล้ว (activeSeg)
+    const origText = activeSeg.text || '';
+    const trText = (prefs.targetLang !== 'sync' ? activeSeg.overlayTr : activeSeg.tr) || activeSeg.tr || '';
+    const sameLang = trEnabled && activeSeg.lang && activeSeg.lang === tgt;
+
+    if (!trEnabled || prefs.show === 'orig' || sameLang) {
+      html = buildLines(toTokens(origText, '', activeSeg.fixed, true)).slice(-n).map(l => lineHtml(l)).join('');
+    } else if (prefs.show === 'tr') {
+      // โหมด 'เฉพาะคำแปล': แสดงเฉพาะคำแปล (trText) ไม่ดึง origText มาแสดงปนเด็ดขาด!
+      if (trText) {
+        html = buildLines(toTokens(trText, '', null, true)).slice(-n).map(l => lineHtml(l)).join('');
+      }
+    } else {
+      const origL = [tailLine(toTokens(origText, '', activeSeg.fixed, true), 0.62, 76)].filter(l => l.length);
+      const trPart = trText
+        ? buildLines(toTokens(trText, '', null, true)).slice(-n).map(l => lineHtml(l)).join('')
+        : buildLines(toTokens(origText, '', activeSeg.fixed, true)).slice(-n).map(l => lineHtml(l)).join('');
+      html = (trText ? origL.map(l => lineHtml(l, 'orig-line')).join('') : '') + trPart;
+    }
+    region.innerHTML = html;
+  }
+
+  function markActivity() {
+    lastActivity = Date.now();
+    region.classList.remove('idle');
+  }
+
+  function clearCaptions() {
+    if (currentSeg) clearedSegId = currentSeg.id;
+    clearedInterim = interimOrig;
+    currentSeg = null;
+    interimOrig = '';
+    interimTr = '';
+    render();
+    fetch('/api/caption_event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'clear' })
+    }).catch(() => {});
+  }
+
+  async function toggleMute() {
+    try {
+      const fd = new FormData();
+      fd.append('muted', 'toggle');
+      const r = await fetch('/api/mic_mute', { method: 'POST', body: fd });
+      const d = await r.json();
+      isMuted = !!d.muted;
+      applyPrefs();
+    } catch (_) {}
+  }
+
+  targetLangSelect.addEventListener('change', async () => {
+    prefs.targetLang = targetLangSelect.value;
+    if (prefs.targetLang !== 'sync' && prefs.targetLang !== 'none' && prefs.show === 'orig') {
+      prefs.show = 'tr';
+    }
+    applyPrefs();
+    try {
+      const fd = new FormData();
+      fd.append('translate_to', prefs.targetLang);
+      await fetch('/api/overlay_settings', { method: 'POST', body: fd });
+    } catch (_) {}
+  });
+
+  muteToggleBtn.addEventListener('click', toggleMute);
+  document.getElementById('muteBanner').addEventListener('click', toggleMute);
+
+  // เชื่อมตรงกับ Unified Backend Stream (SSE) ความหน่วงต่ำ <15ms!
+  function applyServerState(st) {
+    if (!st) return;
+    statusEl.textContent = `● เชื่อมต่อแล้ว (${st.detector || 'CTranslate2'})`;
+    statusEl.classList.add('live');
+
+    const prevMuted = isMuted;
+    isMuted = !!(st.ui && st.ui.muted);
+    webTargetLang = (st.effective_translate_to || (st.ui && st.ui.translate_to) || 'none').split('-')[0].toLowerCase();
+
+    if (st.slide) document.getElementById('slide').textContent = st.slide;
+    if (Array.isArray(st.acronyms)) acronyms = new Set(st.acronyms.map(a => String(a).toLowerCase()));
+
+    const newInterim = (st.interim || '').trim();
+    const newInterimTr = ((prefs.targetLang !== 'sync' ? st.overlay_interim_tr : st.interim_tr) || st.interim_tr || '').trim();
+    const latest = (Array.isArray(st.segs) && st.segs.length) ? st.segs[st.segs.length - 1] : null;
+
+    let changed = (prevMuted !== isMuted);
+    if (newInterim !== interimOrig || newInterimTr !== interimTr) {
+      interimOrig = newInterim;
+      interimTr = newInterimTr;
+      if (newInterim) markActivity();
+      changed = true;
+    }
+
+    if (latest) {
+      const fixedSet = new Set();
+      (latest.fixed || []).forEach(fw => String(fw).toLowerCase().split(/\s+/).forEach(sw => fixedSet.add(cleanKey(sw))));
+      const nextObj = {
+        id: latest.id || 1,
+        text: (latest.text || '').trim(),
+        tr: (latest.tr || '').trim(),
+        overlayTr: (latest.overlay_tr || '').trim(),
+        lang: (latest.lang || 'auto').toLowerCase(),
+        fixed: fixedSet
+      };
+      if (!currentSeg || currentSeg.id !== nextObj.id || currentSeg.tr !== nextObj.tr || currentSeg.overlayTr !== nextObj.overlayTr) {
+        currentSeg = nextObj;
+        markActivity();
+        changed = true;
+      }
+    } else if (currentSeg) {
+      currentSeg = null;
+      changed = true;
+    }
+
+    if (prevMuted !== isMuted) applyPrefs();
+    else if (changed) render();
+  }
+
+  function connectUnifiedStream() {
+    try {
+      const es = new EventSource('/api/captions_stream');
+      es.onmessage = (ev) => {
+        try { applyServerState(JSON.parse(ev.data)); } catch (_) {}
+      };
+      es.onerror = () => {
+        es.close();
+        setTimeout(connectUnifiedStream, 1200);
+      };
+    } catch (_) {
+      // Fallback polling if EventSource unavailable
+      setInterval(async () => {
+        try {
+          const r = await fetch('/api/captions_state?client=captions');
+          applyServerState(await r.json());
+        } catch (_) {}
+      }, 200);
+    }
+  }
+
+  // ซับหายเมื่อหยุดพูดตามเวลาที่เลือก (1–4 วินาที)
+  setInterval(() => {
+    const idle = parseInt(prefs.idle, 10);
+    if (idle > 0 && lastActivity && Date.now() - lastActivity > idle * 1000 && (currentSeg || interimOrig)) {
+      region.classList.add('idle');
+      setTimeout(() => {
+        if (Date.now() - lastActivity > idle * 1000) {
+          if (currentSeg) clearedSegId = currentSeg.id;
+          clearedInterim = interimOrig;
+          render();
+        }
+      }, 400);
+    }
+  }, 200);
+
+  function togglePanel(force) {
+    const show = typeof force === 'boolean' ? force : panel.hidden;
+    panel.hidden = !show; gear.setAttribute('aria-expanded', String(show));
+  }
+  gear.addEventListener('click', () => togglePanel());
+  document.querySelectorAll('.seg[data-key]').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    prefs[seg.dataset.key] = b.dataset.v; applyPrefs();
+  }));
+  document.getElementById('clearBtn').addEventListener('click', clearCaptions);
+  document.getElementById('closePanel').addEventListener('click', () => { togglePanel(false); gear.blur(); });
+
+  const screenVideo = document.getElementById('screen');
+  const pickBtn = document.getElementById('pickSrc'), stopBtn = document.getElementById('stopSrc');
+  const srcHint = document.getElementById('srcHint');
+  async function pickSource() {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+      stopSource();
+      screenStream = stream;
+      screenVideo.srcObject = stream;
+      const track = stream.getVideoTracks()[0];
+      const surface = (track.getSettings && track.getSettings().displaySurface) || '';
+      const label = { monitor: 'ทั้งจอ', window: 'หน้าต่างแอป', browser: 'แท็บเบราว์เซอร์' }[surface] || 'แหล่งภาพ';
+      srcHint.textContent = `กำลังแสดง: ${label} — ${track.label || ''}`;
+      track.addEventListener('ended', stopSource);
+      stopBtn.disabled = false;
+      applyPrefs();
+      togglePanel(false);
+    } catch (err) {
+      srcHint.textContent = 'ยกเลิกการเลือก หรือเบราว์เซอร์ไม่อนุญาตให้จับภาพหน้าจอ';
+    }
+  }
+  function stopSource() {
+    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+    screenStream = null; screenVideo.srcObject = null;
+    stopBtn.disabled = true;
+    srcHint.textContent = 'ยังไม่ได้เลือก · ซับจะขึ้นบนพื้นหลังที่ตั้งไว้';
+    applyPrefs();
+  }
+  pickBtn.addEventListener('click', pickSource);
+  stopBtn.addEventListener('click', stopSource);
+
+  const BG_ORDER = ['black', 'green', 'transparent'];
+  const SIZES = ['4.2', '5.2', '6.4', '8'];
+  document.addEventListener('keydown', (e) => {
+    if (e.target && e.target.tagName === 'SELECT') return;
+    const codeMap = { KeyM: 'm', KeyH: 'h', KeyF: 'f', KeyC: 'c', KeyB: 'b', KeyV: 'v', Equal: '+', NumpadAdd: '+', Minus: '-', NumpadSubtract: '-', Escape: 'esc' };
+    const k = codeMap[e.code] || e.key.toLowerCase();
+    if (k === 'esc') togglePanel(false);
+    else if (k === 'm') toggleMute();
+    else if (k === 'h') togglePanel();
+    else if (k === 'v') { screenStream ? stopSource() : pickSource(); }
+    else if (k === 'f') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}); }
+    else if (k === 'c') clearCaptions();
+    else if (k === 'b') { prefs.bg = BG_ORDER[(BG_ORDER.indexOf(prefs.bg) + 1) % BG_ORDER.length]; applyPrefs(); }
+    else if (k === '+') { prefs.size = SIZES[Math.min(SIZES.length - 1, SIZES.indexOf(prefs.size) + 1)] || '5.2'; applyPrefs(); }
+    else if (k === '-') { prefs.size = SIZES[Math.max(0, SIZES.indexOf(prefs.size) - 1)] || '5.2'; applyPrefs(); }
+  });
+  window.addEventListener('resize', render);
+
+  applyPrefs();
+  connectUnifiedStream();
+</script>
+</body>
+</html>

@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AccentBridge Studio — Asian-Accent Presentation AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #050811;
+      --glass-border: rgba(255, 255, 255, 0.10);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-emerald: #34d399;
+      --accent-rose: #f43f5e;
+      --accent-amber: #fbbf24;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: radial-gradient(circle at 50% 0%, #111b36 0%, var(--bg-deep) 65%);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ambient-orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+    .orb-1 { width: 420px; height: 420px; background: rgba(56, 189, 248, 0.13); top: -120px; left: 18%; }
+    .orb-2 { width: 380px; height: 380px; background: rgba(52, 211, 153, 0.10); bottom: -80px; right: 15%; }
+
+    .top-nav {
+      position: relative; z-index: 30; width: 100%;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 24px 0;
+    }
+    .app-brand {
+      display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.95rem;
+      letter-spacing: -0.01em; color: #fff;
+    }
+    .app-brand span { color: var(--accent-cyan); }
+    .lang-switcher-pill {
+      display: inline-flex; align-items: center; background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--glass-border); border-radius: 999px; padding: 3px; gap: 4px;
+    }
+    .lang-tab-btn {
+      background: transparent; border: none; color: var(--text-muted);
+      font-family: inherit; font-size: 0.76rem; font-weight: 700; padding: 4px 12px;
+      border-radius: 999px; cursor: pointer; transition: 0.2s;
+    }
+    .lang-tab-btn.active {
+      background: var(--accent-cyan); color: #050811; box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+
+    .eyeline-wrapper {
+      position: relative; z-index: 20; width: 100%;
+      display: flex; flex-direction: column; align-items: center; padding: 4px 20px 0;
+    }
+    .camera-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--accent-cyan); background: rgba(56, 189, 248, 0.10);
+      border: 1px solid rgba(56, 189, 248, 0.25); padding: 4px 14px; border-radius: 999px; margin-bottom: 8px;
+    }
+    .camera-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan); }
+
+    .teleprompter-card {
+      width: 100%; max-width: 860px; background: rgba(10, 16, 31, 0.82);
+      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--glass-border); border-radius: 22px; padding: 16px 26px 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .teleprompter-card.hidden {
+      opacity: 0; transform: translateY(-18px) scale(0.98); pointer-events: none; height: 0; padding: 0; overflow: hidden; border: none;
+    }
+    .tp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.8rem; color: var(--text-muted); }
+    .tp-controls { display: flex; align-items: center; gap: 12px; }
+    .tp-btn-mini {
+      background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); color: var(--text-main);
+      padding: 3px 10px; border-radius: 8px; font-size: 0.75rem; cursor: pointer; transition: 0.2s;
+    }
+    .tp-btn-mini:hover { background: rgba(255,255,255,0.14); }
+    .tp-scroll-box {
+      max-height: 118px; overflow-y: auto; scroll-behavior: smooth;
+      line-height: 1.85; font-size: 1.48rem; font-weight: 600; text-align: center;
+      padding: 4px 8px; scrollbar-width: none;
+    }
+    .tp-scroll-box::-webkit-scrollbar { display: none; }
+    .tp-word {
+      display: inline-block; margin: 0 4px; padding: 1px 5px; border-radius: 7px;
+      cursor: pointer; transition: all 0.25s ease; color: rgba(248, 250, 252, 0.90);
+    }
+    .tp-word.spoken { color: var(--accent-emerald); opacity: 0.85; font-weight: 700; text-shadow: 0 0 14px rgba(52, 211, 153, 0.55); }
+    .tp-word.current {
+      color: #ffffff; background: rgba(56, 189, 248, 0.25);
+      box-shadow: 0 2px 0 var(--accent-cyan); transform: translateY(-1px);
+    }
+
+    .stage-container {
+      position: relative; z-index: 10; flex: 1;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      padding: 16px 28px; max-width: 1040px; width: 100%; margin: 0 auto; gap: 16px;
+    }
+    .slide-pill-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .slide-badge {
+      background: rgba(129, 140, 248, 0.14); border: 1px solid rgba(129, 140, 248, 0.32);
+      color: #c7d2fe; font-size: 0.82rem; font-weight: 600; padding: 6px 14px; border-radius: 999px;
+    }
+    .kw-chip {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.74rem;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09);
+      color: #cbd5e1; padding: 4px 10px; border-radius: 999px;
+    }
+
+    .subtitle-cinema-box {
+      width: 100%; min-height: 170px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.60) 0%, rgba(9, 14, 28, 0.78) 100%);
+      backdrop-filter: blur(24px); border: 1px solid var(--glass-border);
+      border-radius: 28px; padding: 32px 38px;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+    }
+    .live-sub-text { font-size: 2.15rem; font-weight: 700; line-height: 1.48; letter-spacing: -0.015em; color: #ffffff; }
+    .interim-ghost { color: rgba(148, 163, 184, 0.75); font-weight: 500; }
+    .rescued-word {
+      display: inline-block; background: rgba(16, 185, 129, 0.22);
+      border: 1px solid rgba(52, 211, 153, 0.50); color: #6ee7b7;
+      padding: 1px 10px; border-radius: 10px; animation: popGlow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popGlow {
+      0% { transform: scale(0.92); background: rgba(52, 211, 153, 0.55); }
+      100% { transform: scale(1); background: rgba(16, 185, 129, 0.22); }
+    }
+    .rescue-toast { margin-top: 14px; font-size: 0.84rem; color: var(--accent-emerald); min-height: 22px; font-weight: 500; }
+    .history-strip {
+      width: 100%; max-height: 82px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 4px; align-items: center;
+      font-size: 0.92rem; color: var(--text-muted); scrollbar-width: none;
+    }
+
+    .dock-wrapper { position: relative; z-index: 25; padding: 0 20px 20px; display: flex; justify-content: center; }
+    .command-dock {
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 24px;
+      padding: 12px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      justify-content: center; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+    .icon-btn {
+      background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border);
+      color: var(--text-main); height: 42px; padding: 0 13px; border-radius: 13px;
+      font-weight: 600; font-size: 0.85rem; cursor: pointer; display: inline-flex;
+      align-items: center; gap: 6px; transition: 0.2s;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.14); transform: translateY(-1px); }
+    .icon-btn.active-toggle { background: rgba(56, 189, 248, 0.18); border-color: rgba(56, 189, 248, 0.45); color: var(--accent-cyan); }
+    .icon-btn.btn-magnet-off {
+      background: rgba(244, 63, 94, 0.15); border-color: rgba(244, 63, 94, 0.45); color: #fca5a5;
+    }
+    .icon-btn.btn-overlay-accent {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.35) 0%, rgba(99, 102, 241, 0.35) 100%);
+      border-color: rgba(56, 189, 248, 0.65); color: #ffffff;
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.25);
+    }
+    .icon-btn.btn-overlay-accent:hover {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.55) 0%, rgba(99, 102, 241, 0.55) 100%);
+    }
+
+    .start-hero-btn {
+      height: 48px; padding: 0 24px; border-radius: 16px; border: none;
+      background: linear-gradient(135deg, #10b981 0%, #0ea5e9 100%);
+      color: #ffffff; font-family: inherit; font-size: 0.96rem; font-weight: 700;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.35); transition: 0.25s;
+    }
+    .start-hero-btn.recording {
+      background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+      box-shadow: 0 8px 25px rgba(244, 63, 94, 0.45);
+    }
+
+    .waveform { display: flex; align-items: center; gap: 3px; height: 26px; width: 44px; }
+    .wave-bar { flex: 1; background: var(--accent-emerald); height: 4px; border-radius: 99px; transition: height 0.08s ease; }
+
+    .trigger-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+      padding: 5px 12px; border-radius: 13px; height: 42px;
+    }
+    .trigger-pill span { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+    .trigger-pill input {
+      background: transparent; border: none; color: var(--accent-emerald);
+      font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.86rem;
+      width: 78px; outline: none; text-transform: uppercase;
+    }
+
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(3, 6, 15, 0.75); backdrop-filter: blur(10px);
+      z-index: 60; display: none; justify-content: center; align-items: center; padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-panel {
+      width: 100%; max-width: 680px; background: #0f172a; border: 1px solid var(--glass-border);
+      border-radius: 24px; padding: 26px; box-shadow: 0 25px 70px rgba(0,0,0,0.7);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .modal-panel textarea, .modal-panel input[type="text"] {
+      width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+      border-radius: 12px; padding: 12px; color: #fff; font-family: inherit; font-size: 0.92rem;
+    }
+    .flash-banner {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+      background: rgba(16, 185, 129, 0.92); color: #fff; font-weight: 800; font-size: 1.25rem;
+      padding: 14px 28px; border-radius: 999px; z-index: 80; opacity: 0; pointer-events: none; transition: 0.28s ease;
+    }
+    .flash-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .flash-banner.prev { background: rgba(56, 189, 248, 0.92); }
+  </style>
+</head>
+<body>
+  <div class="ambient-orb orb-1"></div>
+  <div class="ambient-orb orb-2"></div>
+  <div id="slideFlash" class="flash-banner">⏭️ NEXT SLIDE</div>
+
+  <!-- Header with Global Language Switcher -->
+  <header class="top-nav">
+    <div class="app-brand">
+      <span>✦</span> AccentBridge Studio
+    </div>
+    <div class="lang-switcher-pill">
+      <button id="langBtnEn" class="lang-tab-btn active" onclick="setUILanguage('en')">🌐 English</button>
+      <button id="langBtnTh" class="lang-tab-btn" onclick="setUILanguage('th')">🇹🇭 ไทย</button>
+    </div>
+  </header>
+
+  <section class="eyeline-wrapper">
+    <div class="camera-pill">
+      <span class="camera-dot"></span>
+      <span id="txtEyeLine">EYE-LINE ZONE • LOOK HERE FOR NATURAL EYE CONTACT</span>
+    </div>
+
+    <div id="teleprompterCard" class="teleprompter-card">
+      <div class="tp-header">
+        <span id="tpSlideTitle">📖 Slide Script 1</span>
+        <div class="tp-controls">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <span id="txtAutoScroll">Auto-scroll</span>
+            <input id="autoScrollSpeed" type="range" min="0" max="4" step="1" value="1" style="width:68px;" />
+          </label>
+          <button id="btnTpRestart" class="tp-btn-mini" onclick="resetTeleprompterCursor()">↺ Restart</button>
+          <button id="btnTpEditDeck" class="tp-btn-mini" onclick="openDeckModal()">✏️ Edit Script / Deck</button>
+        </div>
+      </div>
+      <div id="tpScrollBox" class="tp-scroll-box"></div>
+    </div>
+  </section>
+
+  <main class="stage-container">
+    <div class="slide-pill-bar">
+      <span id="slideCounterBadge" class="slide-badge">Slide 1 / 3</span>
+      <div id="activeKeywordsBar" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;"></div>
+    </div>
+
+    <div class="subtitle-cinema-box">
+      <div id="liveSubtitleDisplay" class="live-sub-text">
+        Click <span style="color:var(--accent-emerald);">Start Live</span> to begin presenting with real-time accent rescue
+      </div>
+      <div id="rescueStatusToast" class="rescue-toast">
+        ✨ Real-time Asian Accent Rescue + Slide-Content Anchor Active
+      </div>
+    </div>
+
+    <div id="historyStrip" class="history-strip"></div>
+  </main>
+
+  <footer class="dock-wrapper">
+    <div class="command-dock">
+      <button id="btnPrevSlide" class="icon-btn" onclick="stepSlide(-1)">◀ Prev</button>
+      <button id="btnNextSlide" class="icon-btn" onclick="stepSlide(1)">Next ▶</button>
+      <button id="btnDeckModal" class="icon-btn" onclick="openDeckModal()">📂 Slides</button>
+
+      <button id="startBtn" class="start-hero-btn" onclick="toggleLiveSession()">
+        <span id="startBtnIcon">▶</span>
+        <span id="startBtnText">Start Live</span>
+      </button>
+
+      <div class="waveform" id="waveformBox">
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      </div>
+
+      <div class="trigger-pill" title="Speaking language & Live translation target">
+        <span id="lblSpeak">🗣️ Speak</span>
+        <select id="speakLangSel" onchange="onLangChange()" style="background:transparent;color:var(--accent-emerald);border:none;font-weight:700;outline:none;">
+          <option value="en">EN</option><option value="th">ไทย</option><option value="zh">中文</option><option value="ja">日本語</option>
+          <option value="ko">한국어</option><option value="vi">VI</option><option value="id">ID</option><option value="ms">MS</option>
+          <option value="fr">FR</option><option value="es">ES</option>
+        </select>
+        <span id="lblTranslate">🌐 Translate</span>
+        <select id="translateSel" onchange="onLangChange()" style="background:transparent;color:var(--accent-cyan);border:none;font-weight:700;outline:none;">
+          <option value="none">None</option><option value="th">ไทย (Thai)</option><option value="en">English</option><option value="zh">中文</option>
+          <option value="ja">日本語</option><option value="ko">한국어</option><option value="vi">Tiếng Việt</option><option value="id">Indonesia</option>
+          <option value="ms">Melayu</option><option value="fr">Français</option><option value="es">Español</option>
+        </select>
+      </div>
+
+      <!-- Slide Magnet Toggle -->
+      <button id="slideMagnetBtn" class="icon-btn active-toggle" onclick="toggleSlideMagnet()" title="Toggle slide content anchoring">
+        🧲 Slide Magnet: ON
+      </button>
+
+      <!-- Desktop Overlay Button -->
+      <button id="btnLaunchOverlay" class="icon-btn btn-overlay-accent" onclick="launchDesktopOverlay()" title="Launch transparent overlay on desktop">
+        🖥️ Overlay
+      </button>
+
+      <button id="fastModeBtn" class="icon-btn" onclick="toggleFastMode()">⚡ Fast Mode</button>
+      <button id="speakerGateBtn" class="icon-btn" onclick="toggleSpeakerGate()" oncontextmenu="openSpeakerModal(); return false;" title="Toggle voice gate">🔓 My Voice: OFF</button>
+      <button id="btnVoiceProfile" class="icon-btn" onclick="openSpeakerModal()">🎙️ Voice Profile</button>
+      <button id="btnCalibAccent" class="icon-btn" style="border-color:rgba(56,189,248,0.4);color:var(--accent-cyan);" onclick="openCalibModal()">
+        🎧 Calibrate Accent
+      </button>
+
+      <div class="trigger-pill" title="Voice command for next/prev slide">
+        <span id="lblTrigger">🗣️ Cue:</span>
+        <input id="triggerInput" type="text" value="next" />
+      </div>
+
+      <button id="tpToggleBtn" class="icon-btn active-toggle" onclick="toggleTeleprompter()">📖 Script</button>
+      <button id="btnJudgeScreen" class="icon-btn" onclick="openCaptionWindow()" title="Open clean screen for Zoom/Meet screen share">🪟 Presentation Screen</button>
+      <button class="icon-btn" onclick="downloadSrt()">📥 .SRT</button>
+    </div>
+  </footer>
+
+  <!-- MODAL 1: Accent Calibration -->
+  <div id="calibModal" class="modal-backdrop">
+    <div class="modal-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 id="txtCalibTitle" style="font-size:1.2rem;">🎧 Calibrate Accent & Microphone (10 Seconds)</h3>
+        <button class="tp-btn-mini" onclick="closeCalibModal()">✕</button>
+      </div>
+      <p id="txtCalibDesc" style="font-size:0.9rem;color:var(--text-muted);">
+        Click record and read the sentence below in your natural accent. The AI will adapt specifically to your voice:
+      </p>
+      <div id="calibPromptText" style="background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);padding:16px;border-radius:14px;font-size:1.25rem;font-weight:700;text-align:center;color:#fff;">
+        Today please check the three files on the right slide and verify our baseline model recall.
+      </div>
+      <div id="calibResultBox" style="font-size:0.88rem;color:var(--accent-emerald);min-height:24px;"></div>
+      <div style="display:flex;justify-content:center;gap:12px;">
+        <button id="calibRecBtn" class="start-hero-btn" onclick="toggleCalibrationRecord()">🎙️ Start Reading Prompt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Speaker Recognition -->
+  <div id="speakerModal" class="modal-backdrop">
+    <div class="modal-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 id="txtSpkTitle" style="font-size:1.2rem;">🎙️ Enroll Speaker Voice Profile</h3>
+        <button class="tp-btn-mini" onclick="closeSpeakerModal()">✕</button>
+      </div>
+      <p id="txtSpkDesc" style="font-size:0.9rem;color:var(--text-muted);">
+        Record for at least 8 seconds. When "My Voice Only" is enabled, background voices or judge questions won't clutter your subtitles.
+      </p>
+      <div style="background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);padding:16px;border-radius:14px;font-size:1.1rem;font-weight:600;text-align:center;color:#fff;line-height:1.6;">
+        Today I will present our project. We built a live subtitle system that listens to accented English and matches the words on each slide.
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button id="spkRecBtn" class="start-hero-btn" onclick="toggleSpeakerEnroll()">🎙️ Record Voice Profile</button>
+        <span id="spkStatus" style="font-size:0.9rem;color:var(--accent-emerald);"></span>
+      </div>
+      <div id="spkMsg" style="font-size:0.88rem;color:var(--text-muted);min-height:22px;"></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:0.88rem;color:var(--text-muted);">
+        <label id="lblSpkStrict" for="spkLevel">Strictness:</label>
+        <select id="spkLevel" onchange="saveSpeakerLevel()" style="background:#1e293b;color:#fff;border:1px solid var(--glass-border);border-radius:8px;padding:6px 10px;">
+          <option value="lenient">Lenient (Low quality mic / room echo)</option>
+          <option value="normal">Normal (Recommended)</option>
+          <option value="strict">Strict (Crowded room)</option>
+        </select>
+        <button id="btnClearSpk" class="tp-btn-mini" onclick="clearSpeakerProfile()">🗑️ Clear Voice Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Deck & Script Upload -->
+  <div id="deckModal" class="modal-backdrop">
+    <div class="modal-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 id="txtDeckTitle" style="font-size:1.2rem;">📂 Upload Presentation Deck or Edit Scripts</h3>
+        <button class="tp-btn-mini" onclick="closeDeckModal()">✕</button>
+      </div>
+      <div>
+        <label id="lblDeckFile" style="font-size:0.85rem;color:var(--text-muted);display:block;margin-bottom:6px;">
+          1. Upload Presentation (.pptx with Speaker Notes, .pdf, .docx, .txt)
+        </label>
+        <input id="deckFileInput" type="file" accept=".pptx,.pdf,.docx,.txt,.md" style="color:#cbd5e1;" />
+      </div>
+      <div>
+        <label id="lblDeckScript" style="font-size:0.85rem;color:var(--text-muted);display:block;margin-bottom:6px;">
+          2. Or paste rough scripts separated by ---
+        </label>
+        <textarea id="roughScriptInput" rows="5"></textarea>
+      </div>
+      <div>
+        <label id="lblDeckKws" style="font-size:0.85rem;color:var(--text-muted);display:block;margin-bottom:6px;">
+          🎯 Slide Keywords (comma-separated)
+        </label>
+        <input id="customKeywordsModal" type="text" />
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button id="btnSaveSlideKws" class="icon-btn" onclick="saveCurrentSlideEdits()">💾 Save Slide Keywords</button>
+        <button id="btnLoadDeck" class="start-hero-btn" style="height:42px;padding:0 20px;" onclick="uploadAndParseDeck()">✨ Load Into Studio</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Internationalization (EN / TH) ---
+    let currentUILang = localStorage.getItem('ab_ui_lang') || 'en';
+
+    const I18N = {
+      en: {
+        eyeLine: "EYE-LINE ZONE • LOOK HERE FOR NATURAL EYE CONTACT",
+        autoScroll: "Auto-scroll",
+        tpRestart: "↺ Restart",
+        tpEditDeck: "✏️ Edit Script / Deck",
+        tpSlidePrefix: "📖 Slide Script",
+        slideCounterPrefix: "Slide",
+        startLive: "Start Live",
+        stopLive: "Stop Live",
+        readyPrompt: "Click Start Live to begin presenting with real-time accent rescue",
+        readyToast: "✨ Real-time Asian Accent Rescue + Slide-Content Anchor Active",
+        speak: "🗣️ Speak",
+        translate: "🌐 Translate",
+        magnetOn: "🧲 Slide Magnet: ON",
+        magnetOff: "🚫 Slide Magnet: OFF",
+        magnetOnToast: "✅ Slide Anchor ON: Accented terms will be rescued using slide content",
+        magnetOffToast: "🔒 Slide Anchor OFF: Raw transcription 100% (No slide interference)",
+        overlayBtn: "🖥️ Overlay",
+        fastMode: "⚡ Fast Mode",
+        whisperMode: "🎯 Whisper Mode",
+        myVoiceOn: "🔒 My Voice: ON",
+        myVoiceOff: "🔓 My Voice: OFF",
+        voiceProfile: "🎙️ Voice Profile",
+        calibAccent: "🎧 Calibrate Accent",
+        voiceTriggerLabel: "🗣️ Cue:",
+        scriptBtn: "📖 Script",
+        judgeScreenBtn: "🪟 Presentation Screen",
+        calibTitle: "🎧 Calibrate Accent & Microphone (10 Seconds)",
+        calibDesc: "Click record and read the sentence below in your natural accent. The AI will adapt specifically to your voice:",
+        calibBtnStart: "🎙️ Start Reading Prompt",
+        calibBtnStop: "⏹ Stop & Calibrate AI",
+        spkTitle: "🎙️ Enroll Speaker Voice Profile",
+        spkDesc: "Record for at least 8 seconds. When 'My Voice Only' is enabled, background voices or judge questions won't clutter your subtitles.",
+        spkBtnRecord: "🎙️ Record Voice Profile",
+        deckTitle: "📂 Upload Presentation Deck or Edit Scripts",
+        deckFileLbl: "1. Upload Presentation (.pptx with Speaker Notes, .pdf, .docx, .txt)",
+        deckScriptLbl: "2. Or paste rough scripts separated by ---",
+        deckKwsLbl: "🎯 Slide Keywords (comma-separated)",
+        deckSaveKws: "💾 Save Slide Keywords",
+        deckLoadBtn: "✨ Load Into Studio"
+      },
+      th: {
+        eyeLine: "EYE-LINE ZONE • มองอ่านตรงนี้สายตาจะสบกล้องเป็นธรรมชาติ",
+        autoScroll: "ไหลอัตโนมัติ",
+        tpRestart: "↺ เริ่มใหม่",
+        tpEditDeck: "✏️ แก้บท/สไลด์",
+        tpSlidePrefix: "📖 บทพูดสไลด์ที่",
+        slideCounterPrefix: "สไลด์",
+        startLive: "Start Live",
+        stopLive: "Stop Live",
+        readyPrompt: "กด Start Live เริ่มได้เลย หรือฝึกจำเสียง 1 ครั้งก่อนพูด",
+        readyToast: "✨ โหมดเรียลไทม์ + Asian Phoneme Rescue พร้อมทำงาน",
+        speak: "🗣️ พูด",
+        translate: "🌐 แปลเป็น",
+        magnetOn: "🧲 ดูดคำสไลด์: เปิด",
+        magnetOff: "🚫 ดูดคำสไลด์: ปิด",
+        magnetOnToast: "✅ เปิดระบบดูดคำสไลด์แล้ว (กู้คำเพี้ยนตามสไลด์อัตโนมัติ)",
+        magnetOffToast: "🔒 ปิดระบบดูดคำสไลด์แล้ว (พิมพ์ตามเสียงจริง 100% ไม่ดึงคำสไลด์มาปน)",
+        overlayBtn: "🖥️ ซับลอย",
+        fastMode: "⚡ โหมดเร็ว",
+        whisperMode: "🎯 โหมด Whisper",
+        myVoiceOn: "🔒 เฉพาะเสียงฉัน: เปิด",
+        myVoiceOff: "🔓 เฉพาะเสียงฉัน: ปิด",
+        voiceProfile: "🎙️ จำเสียงฉัน",
+        calibAccent: "🎧 ฝึกจำเสียงฉัน",
+        voiceTriggerLabel: "🗣️ สั่งเลื่อน:",
+        scriptBtn: "📖 บทพูด",
+        judgeScreenBtn: "🪟 จอซับกรรมการ",
+        calibTitle: "🎧 ฝึก AI ให้จำสำเนียงและไมค์ของคุณโดยเฉพาะ (10 วินาที)",
+        calibDesc: "กดปุ่มเริ่มอัดด้านล่าง แล้วอ่านประโยคภาษาอังกฤษนี้ด้วยสำเนียงปกติของคุณ:",
+        calibBtnStart: "🎙️ กดเริ่มอ่านประโยคทดสอบ",
+        calibBtnStop: "⏹ กดปรับจูนโมเดล AI",
+        spkTitle: "🎙️ จำเสียงผู้พูด (ขึ้นซับเฉพาะเสียงคุณ)",
+        spkDesc: "กดอัด แล้วพูดอย่างน้อย 8 วินาที เมื่อเปิด 'เฉพาะเสียงฉัน' เสียงคนอื่นจะไม่ขึ้นเป็นซับ",
+        spkBtnRecord: "🎙️ กดเริ่มอัดเสียง",
+        deckTitle: "📂 อัปโหลดสไลด์นำเสนอ หรือแก้ไขบทพูดแต่ละหน้า",
+        deckFileLbl: "1. อัปโหลดไฟล์ Presentation (.pptx, .pdf, .docx, .txt)",
+        deckScriptLbl: "2. หรือวางบทพูดแบ่งแต่ละสไลด์ด้วยเครื่องหมาย ---",
+        deckKwsLbl: "🎯 คำเฉพาะของสไลด์หน้าปัจจุบัน (คั่นด้วยลูกน้ำ ,)",
+        deckSaveKws: "💾 บันทึกคำเฉพาะหน้านี้",
+        deckLoadBtn: "✨ โหลดสไลด์เข้าสตูดิโอ"
+      }
+    };
+
+    function setUILanguage(lang) {
+      currentUILang = lang;
+      localStorage.setItem('ab_ui_lang', lang);
+      document.getElementById('langBtnEn').classList.toggle('active', lang === 'en');
+      document.getElementById('langBtnTh').classList.toggle('active', lang === 'th');
+
+      const t = I18N[lang];
+      document.getElementById('txtEyeLine').textContent = t.eyeLine;
+      document.getElementById('txtAutoScroll').textContent = t.autoScroll;
+      document.getElementById('btnTpRestart').textContent = t.tpRestart;
+      document.getElementById('btnTpEditDeck').textContent = t.tpEditDeck;
+      document.getElementById('lblSpeak').textContent = t.speak;
+      document.getElementById('lblTranslate').textContent = t.translate;
+      document.getElementById('lblTrigger').textContent = t.voiceTriggerLabel;
+      document.getElementById('tpToggleBtn').textContent = t.scriptBtn;
+      document.getElementById('btnJudgeScreen').textContent = t.judgeScreenBtn;
+      document.getElementById('btnVoiceProfile').textContent = t.voiceProfile;
+      document.getElementById('btnCalibAccent').textContent = t.calibAccent;
+      document.getElementById('btnLaunchOverlay').textContent = t.overlayBtn;
+
+      // Modals
+      document.getElementById('txtCalibTitle').textContent = t.calibTitle;
+      document.getElementById('txtCalibDesc').textContent = t.calibDesc;
+      document.getElementById('calibRecBtn').textContent = isCalibRec ? t.calibBtnStop : t.calibBtnStart;
+      document.getElementById('txtSpkTitle').textContent = t.spkTitle;
+      document.getElementById('txtSpkDesc').textContent = t.spkDesc;
+      document.getElementById('spkRecBtn').textContent = t.spkBtnRecord;
+      document.getElementById('txtDeckTitle').textContent = t.deckTitle;
+      document.getElementById('lblDeckFile').textContent = t.deckFileLbl;
+      document.getElementById('lblDeckScript').textContent = t.deckScriptLbl;
+      document.getElementById('lblDeckKws').textContent = t.deckKwsLbl;
+      document.getElementById('btnSaveSlideKws').textContent = t.deckSaveKws;
+      document.getElementById('btnLoadDeck').textContent = t.deckLoadBtn;
+
+      updateMagnetButtonText();
+      renderCurrentSlide();
+    }
+
+    const captionChannel = new BroadcastChannel('accentbridge-captions');
+    const _postCaption = captionChannel.postMessage.bind(captionChannel);
+    captionChannel.postMessage = (m) => {
+      _postCaption(m);
+      if (m && ['final', 'interim', 'slide'].includes(m.type)) {
+        fetch('/api/caption_event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(m) }).catch(() => {});
+      }
+    };
+    let slides = [], currentSlideIdx = 0, scriptWords = [], tpCursor = 0;
+    let isLive = false, subtitleHistory = [], lastTriggerTs = 0;
+    let calibSentence = "Today please check the three files on the right slide and verify our baseline model recall.";
+
+    // Slide Magnet State
+    let slideMagnetActive = true;
+
+    let audioCtx = null, mediaStream = null, processorNode = null;
+    let pcmChunks = [], speechFrames = 0, silenceFrames = 0, isSpeakingChunk = false;
+    let preRollBuffer = [], recognition = null, latestConfirmedHtml = "", autoScrollTimer = null;
+
+    let isCalibRec = false, calibCtx = null, calibStream = null, calibNode = null, calibBuffers = [];
+
+    const KNOWN_PHONETIC_PAIRS = {
+      "fire": "file", "fine": "file", "five": "file", "fly": "file",
+      "fight": "point", "fights": "points", "poy": "point", "pint": "point",
+      "side": "slide", "sly": "slide", "slight": "slide",
+      "tree": "three", "free": "three",
+      "light": "right", "write": "right", "ride": "right", "lifeline": "right",
+      "sauce": "source", "sort": "source",
+      "era": "error", "late": "rate",
+      "modu": "modules", "module": "modules",
+      "skrip": "script", "neck": "next", "neks": "next"
+    };
+
+    const FORWARD_CUES = ["next", "next slide", "move to next", "moving on", "following slide", "เน็กซ์", "เน็ก", "เน็ค", "เนก", "ถัดไป", "หน้าถัดไป", "สไลด์ถัดไป"];
+    const BACKWARD_CUES = ["back", "come back", "previous", "previous slide", "go back", "last slide", "prev", "ย้อนกลับ", "กลับไป", "หน้าก่อน", "หน้าก่อนหน้า", "สไลด์ก่อนหน้า", "ถอยกลับ"];
+
+    // Casual speech detection (never apply slide magnet to these phrases)
+    const CASUAL_PHRASES = [
+      "fuck", "bitch", "shut up", "shut the fuck", "hello", "hi", "hey",
+      "yeah", "sorry", "finally", "happened", "what happened", "who are you",
+      "don't happen", "go away", "bro", "okay", "alright", "test", "testing"
+    ];
+
+    function isCasualSpeech(txt) {
+      if (!txt) return false;
+      const low = txt.toLowerCase();
+      return CASUAL_PHRASES.some(c => low.includes(c));
+    }
+
+    function updateMagnetButtonText() {
+      const btn = document.getElementById('slideMagnetBtn');
+      const t = I18N[currentUILang];
+      if (slideMagnetActive) {
+        btn.classList.add('active-toggle');
+        btn.classList.remove('btn-magnet-off');
+        btn.textContent = t.magnetOn;
+      } else {
+        btn.classList.remove('active-toggle');
+        btn.classList.add('btn-magnet-off');
+        btn.textContent = t.magnetOff;
+      }
+    }
+
+    function toggleSlideMagnet() {
+      slideMagnetActive = !slideMagnetActive;
+      updateMagnetButtonText();
+      const t = I18N[currentUILang];
+      document.getElementById('rescueStatusToast').textContent = slideMagnetActive ? t.magnetOnToast : t.magnetOffToast;
+    }
+
+    function checkAndTriggerVoiceNavigation(text) {
+      if (!text || Date.now() - lastTriggerTs < 1600) return false;
+      const lower = text.toLowerCase().trim();
+      const trigInput = (document.getElementById('triggerInput').value || 'next').toLowerCase().trim();
+
+      // Check backward cues
+      for (const cue of BACKWARD_CUES) {
+        if (lower === cue || lower.endsWith(' ' + cue) || lower.startsWith(cue + ' ') || lower.includes(cue)) {
+          lastTriggerTs = Date.now();
+          triggerPrevSlideVisual(cue.toUpperCase());
+          return true;
+        }
+      }
+
+      // Check forward cues
+      if (lower === trigInput || lower.endsWith(' ' + trigInput) || lower.includes(trigInput)) {
+        lastTriggerTs = Date.now();
+        triggerNextSlideVisual(trigInput.toUpperCase());
+        return true;
+      }
+      for (const cue of FORWARD_CUES) {
+        if (lower === cue || lower.endsWith(' ' + cue) || lower.includes(cue)) {
+          lastTriggerTs = Date.now();
+          triggerNextSlideVisual(cue.toUpperCase());
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function simplePhoneticKey(w) {
+      return (w || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        .replace(/ght/g, 't').replace(/th/g, 't').replace(/r/g, 'l').replace(/v/g, 'w')
+        .replace(/ee/g, 'i').replace(/ea/g, 'i').replace(/oo/g, 'u').replace(/e$/g, '').replace(/[tdk]$/g, '');
+    }
+
+    function wordsRoughlyMatch(spokenW, targetW) {
+      const a = (spokenW || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const b = (targetW || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (!a || !b) return false;
+      if (a === b) return true;
+      if (KNOWN_PHONETIC_PAIRS[a] === b) return true;
+      return (a.length >= 3 && b.length >= 3 && (simplePhoneticKey(a) === simplePhoneticKey(b) || a.startsWith(b.slice(0, 3))));
+    }
+
+    async function initStudio() {
+      const res = await fetch('/api/init');
+      const data = await res.json();
+      slides = data.slides || [];
+      if (data.calibration_sentence) {
+        calibSentence = data.calibration_sentence;
+        document.getElementById('calibPromptText').textContent = calibSentence;
+      }
+      setUILanguage(currentUILang);
+      renderCurrentSlide();
+      startGentleAutoScroll();
+    }
+
+    function renderCurrentSlide() {
+      if (!slides.length) return;
+      currentSlideIdx = Math.max(0, Math.min(currentSlideIdx, slides.length - 1));
+      const s = slides[currentSlideIdx];
+      const t = I18N[currentUILang];
+      document.getElementById('slideCounterBadge').textContent = `${t.slideCounterPrefix} ${currentSlideIdx + 1} / ${slides.length} • ${s.title}`;
+      document.getElementById('tpSlideTitle').textContent = `${t.tpSlidePrefix} ${currentSlideIdx + 1}: ${s.title}`;
+      document.getElementById('customKeywordsModal').value = (s.keywords || []).join(', ');
+      document.getElementById('activeKeywordsBar').innerHTML = (s.keywords || []).slice(0, 8).map(k => `<span class="kw-chip">${k}</span>`).join('');
+      scriptWords = (s.script || s.text || "").split(/\s+/).filter(Boolean);
+      tpCursor = 0;
+      renderTeleprompterTokens();
+      document.getElementById('tpScrollBox').scrollTop = 0;
+      latestConfirmedHtml = "";
+      document.getElementById('liveSubtitleDisplay').innerHTML = `Slide ${currentSlideIdx + 1}: ${s.title}`;
+    }
+
+    function renderTeleprompterTokens() {
+      const box = document.getElementById('tpScrollBox');
+      box.innerHTML = scriptWords.map((w, idx) => {
+        let cls = 'tp-word';
+        if (idx < tpCursor) cls += ' spoken';
+        else if (idx === tpCursor) cls += ' current';
+        return `<span class="${cls}" id="tpw-${idx}" onclick="jumpTpCursor(${idx})">${w}</span>`;
+      }).join(' ');
+      const activeEl = document.getElementById(`tpw-${tpCursor}`);
+      if (activeEl) box.scrollTo({ top: Math.max(0, activeEl.offsetTop - 36), behavior: 'smooth' });
+    }
+
+    function jumpTpCursor(idx) { 
+      tpCursor = idx; 
+      renderTeleprompterTokens(); 
+      if (slideMagnetActive) syncGreenWordsToSubtitle();
+    }
+
+    function resetTeleprompterCursor() { 
+      tpCursor = 0; 
+      renderTeleprompterTokens(); 
+    }
+
+    function syncGreenWordsToSubtitle(optionalTr = '') {
+      if (!slideMagnetActive) return;
+      if (!scriptWords.length || tpCursor <= 0) return;
+      const greenWords = scriptWords.slice(0, tpCursor);
+      const textToDisplay = greenWords.join(' ');
+
+      const slideKws = new Set((slides[currentSlideIdx]?.keywords || []).map(k => k.toLowerCase()));
+      const htmlOutput = greenWords.map(w => {
+        const clean = w.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (slideKws.has(clean) || (w.length >= 2 && w === w.toUpperCase())) {
+          return `<span class="rescued-word">${w} ✨</span>`;
+        }
+        return w;
+      }).join(' ');
+
+      latestConfirmedHtml = htmlOutput;
+      const trHtml = optionalTr ? `<div style="font-size:0.62em;color:var(--accent-cyan);margin-top:6px;">🌐 ${optionalTr.replace(/[<>&]/g, '')}</div>` : '';
+      document.getElementById('liveSubtitleDisplay').innerHTML = htmlOutput + trHtml;
+      
+      const t = I18N[currentUILang];
+      document.getElementById('rescueStatusToast').textContent = currentUILang === 'en'
+        ? `🎯 Anchored to slide: "${greenWords.slice(-4).join(' ')}"`
+        : `🎯 ดึงคำสไลด์อัตโนมัติ: "${greenWords.slice(-4).join(' ')}"`;
+
+      captionChannel.postMessage({ type: 'final', text: textToDisplay, translation: optionalTr || '', rescued: Array.from(slideKws) });
+
+      if (tpCursor >= scriptWords.length && Date.now() - lastTriggerTs >= 2200) {
+        lastTriggerTs = Date.now();
+        setTimeout(() => triggerNextSlideVisual("AUTO-END"), 800);
+      }
+    }
+
+    function advanceTeleprompterByWords(spokenText) {
+      if (!scriptWords.length || !spokenText) return;
+
+      if (checkAndTriggerVoiceNavigation(spokenText)) return;
+      if (!slideMagnetActive || isCasualSpeech(spokenText)) return;
+
+      let changed = false;
+      const spokenToks = spokenText.split(/\s+/).filter(Boolean);
+
+      for (const sw of spokenToks) {
+        const maxLook = Math.min(scriptWords.length, tpCursor + 12);
+        for (let idx = tpCursor; idx < maxLook; idx++) {
+          if (wordsRoughlyMatch(sw, scriptWords[idx])) {
+            tpCursor = idx + 1;
+            changed = true;
+            break;
+          }
+        }
+      }
+
+      if (changed) {
+        renderTeleprompterTokens();
+        syncGreenWordsToSubtitle();
+      }
+    }
+
+    function startGentleAutoScroll() {
+      if (autoScrollTimer) clearInterval(autoScrollTimer);
+      autoScrollTimer = setInterval(() => {
+        if (!isLive) return;
+        const speed = parseInt(document.getElementById('autoScrollSpeed').value || '0', 10);
+        if (speed > 0) document.getElementById('tpScrollBox').scrollTop += speed * 0.35;
+      }, 100);
+    }
+
+    function triggerNextSlideVisual(label) {
+      if (currentSlideIdx + 1 < slides.length) {
+        currentSlideIdx++;
+        renderCurrentSlide();
+        const flash = document.getElementById('slideFlash');
+        flash.className = 'flash-banner show';
+        flash.textContent = `⚡ "${label}" → Slide ${currentSlideIdx + 1}`;
+        setTimeout(() => flash.classList.remove('show'), 1100);
+        document.getElementById('rescueStatusToast').textContent = `🔄 Slide Advanced: #${currentSlideIdx + 1}`;
+      }
+    }
+
+    function triggerPrevSlideVisual(label) {
+      if (currentSlideIdx > 0) {
+        currentSlideIdx--;
+        renderCurrentSlide();
+        const flash = document.getElementById('slideFlash');
+        flash.className = 'flash-banner show prev';
+        flash.textContent = `⏮️ "${label}" → Slide ${currentSlideIdx + 1}`;
+        setTimeout(() => flash.classList.remove('show'), 1100);
+        document.getElementById('rescueStatusToast').textContent = `⏮️ Slide Rewound: #${currentSlideIdx + 1}`;
+      }
+    }
+
+    function stepSlide(delta) {
+      if (!slides.length) return;
+      currentSlideIdx = Math.max(0, Math.min(currentSlideIdx + delta, slides.length - 1));
+      renderCurrentSlide();
+    }
+
+    function toggleTeleprompter() {
+      document.getElementById('teleprompterCard').classList.toggle('hidden');
+      document.getElementById('tpToggleBtn').classList.toggle('active-toggle');
+    }
+
+    function encodeWavBlob(samples, sampleRate = 16000) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF'); view.setUint32(4, 36 + samples.length * 2, true);
+      writeStr(8, 'WAVE'); writeStr(12, 'fmt '); view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+      writeStr(36, 'data'); view.setUint32(40, samples.length * 2, true);
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++, offset += 2) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function updateWaveformVisual(rms) {
+      document.querySelectorAll('.wave-bar').forEach((b, idx) => {
+        const factor = Math.sin((Date.now() / 90) + idx) * 0.5 + 0.5;
+        b.style.height = `${isLive ? Math.min(26, Math.max(4, rms * 300 * (0.5 + factor))) : 4}px`;
+      });
+    }
+
+    let aiBusy = false, pendingAudio = null;
+    function queueAudioChunk(float32Array) {
+      if (!aiBusy) { runAudioChunk(float32Array); return; }
+      if (!pendingAudio) { pendingAudio = float32Array; return; }
+      const merged = new Float32Array(pendingAudio.length + float32Array.length);
+      merged.set(pendingAudio, 0); merged.set(float32Array, pendingAudio.length);
+      pendingAudio = merged.length > 16000 * 8 ? merged.slice(merged.length - 16000 * 8) : merged;
+    }
+    async function runAudioChunk(float32Array) {
+      aiBusy = true;
+      try { await sendAudioChunkToAI(float32Array); }
+      finally {
+        aiBusy = false;
+        if (pendingAudio && isLive) { const next = pendingAudio; pendingAudio = null; runAudioChunk(next); }
+        else pendingAudio = null;
+      }
+    }
+
+    function startBrowserInterimSpeech() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+      recognition = new SR();
+      recognition.lang = SR_LANG[speakLang] || 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const txt = event.results[i][0].transcript.trim();
+          if (event.results[i].isFinal) { 
+            if (checkAndTriggerVoiceNavigation(txt)) return;
+            handleBrowserFinal(txt); 
+          } else {
+            interim += txt + ' ';
+          }
+        }
+        const clean = interim.trim();
+        if (!clean) return;
+        heldInterim = clean;
+        if (!speakerAllowsText()) return;
+
+        advanceTeleprompterByWords(clean);
+
+        if (slideMagnetActive && tpCursor > 0 && scriptWords.length > 0 && !isCasualSpeech(clean)) {
+          syncGreenWordsToSubtitle();
+        } else {
+          showInterim(clean);
+        }
+      };
+      recognition.onend = () => { if (isLive) { recognition.lang = SR_LANG[speakLang] || 'en-US'; try { recognition.start(); } catch (_) {} } };
+      try { recognition.start(); } catch (_) {}
+    }
+
+    const SR_SUPPORTED = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    let fastMode = SR_SUPPORTED, speakerGateOn = false, speakerEnrolled = false;
+    try {
+      const fm = localStorage.getItem('ab_fast_mode'); if (fm !== null) fastMode = SR_SUPPORTED && fm === '1';
+      speakerGateOn = localStorage.getItem('ab_speaker_gate') === '1';
+    } catch (_) {}
+    let speakerHold = false, speakerOk = true, heldInterim = '', heldFinals = [];
+
+    const SR_LANG = { en: 'en-US', th: 'th-TH', zh: 'cmn-Hans-CN', ja: 'ja-JP', ko: 'ko-KR', vi: 'vi-VN', id: 'id-ID', ms: 'ms-MY', fr: 'fr-FR', es: 'es-ES' };
+    let speakLang = 'en', translateTo = 'none';
+    try { speakLang = localStorage.getItem('ab_speak_lang') || 'en'; translateTo = localStorage.getItem('ab_translate_to') || 'none'; } catch (_) {}
+    function useWhisper() { return !fastMode && speakLang === 'en'; }
+    function onLangChange() {
+      speakLang = document.getElementById('speakLangSel').value;
+      translateTo = document.getElementById('translateSel').value;
+      try { localStorage.setItem('ab_speak_lang', speakLang); localStorage.setItem('ab_translate_to', translateTo); } catch (_) {}
+      if (speakLang !== 'en' && !SR_SUPPORTED) alert('Non-English speech requires Google Chrome or Microsoft Edge.');
+      if (recognition && isLive) { try { recognition.stop(); } catch (_) {} }
+      captionChannel.postMessage({ type: 'lang', speak: speakLang, translate: translateTo });
+      updateModeButtons();
+    }
+
+    function showInterim(clean) {
+      if (slideMagnetActive && tpCursor > 0 && scriptWords.length > 0 && !isCasualSpeech(clean)) {
+        syncGreenWordsToSubtitle();
+        return;
+      }
+      document.getElementById('liveSubtitleDisplay').innerHTML =
+        (latestConfirmedHtml ? latestConfirmedHtml + ' ' : '') + `<span class="interim-ghost">${clean.replace(/[<>&]/g, '')}</span>`;
+      captionChannel.postMessage({ type: 'interim', text: clean });
+    }
+
+    function speakerAllowsText() { return !speakerGateOn || !speakerEnrolled || (!speakerHold && speakerOk); }
+    function onUtteranceStart() {
+      if (speakerGateOn && speakerEnrolled) { speakerHold = true; heldInterim = ''; heldFinals = []; }
+    }
+    function showSpeakerRejected(score) {
+      document.getElementById('rescueStatusToast').textContent =
+        `🔒 Voice Rejected: Voice profile mismatch${score != null ? ` (${Math.round(score * 100)}% match)` : ''}`;
+    }
+    async function verifySpeakerChunk(arr) {
+      if (!speakerGateOn || !speakerEnrolled) return;
+      const fd = new FormData();
+      fd.append('audio', encodeWavBlob(arr, 16000), 'v.wav');
+      try {
+        const r = await (await fetch('/api/verify_speaker', { method: 'POST', body: fd })).json();
+        if (r.ok === null) return;
+        speakerOk = r.ok !== false;
+        speakerHold = false;
+        if (speakerOk) {
+          const finals = heldFinals; heldFinals = [];
+          finals.forEach(t => handleBrowserFinal(t));
+        } else {
+          heldInterim = ''; heldFinals = [];
+          showSpeakerRejected(r.score);
+        }
+      } catch (_) { speakerHold = false; }
+    }
+    function routeAudioChunk(arr) {
+      if (!useWhisper()) { if (speakerGateOn) verifySpeakerChunk(arr); return; }
+      queueAudioChunk(arr);
+    }
+
+    async function handleBrowserFinal(text) {
+      if (!slides.length) return;
+      if (speakerGateOn && speakerEnrolled) {
+        if (speakerHold) { heldFinals.push(text); return; }
+        if (!speakerOk) return;
+      }
+
+      if (checkAndTriggerVoiceNavigation(text)) return;
+
+      if (!slideMagnetActive || isCasualSpeech(text)) {
+        applyTranscriptResult({
+          subtitle: text,
+          translation: '',
+          duration: Math.max(1.8, text.split(/\s+/).length * 0.38),
+          rescued: []
+        });
+        return;
+      }
+
+      advanceTeleprompterByWords(text);
+
+      const s = slides[currentSlideIdx];
+      const fd = new FormData();
+      fd.append('text', text);
+      fd.append('slide_title', s.title || '');
+      fd.append('slide_text', (s.script || '') + '\n' + (s.text || ''));
+      fd.append('keywords', (s.keywords || []).join(', '));
+      const nextSlide = (currentSlideIdx + 1 < slides.length) ? slides[currentSlideIdx + 1] : null;
+      fd.append('next_slide_idx', nextSlide ? String(currentSlideIdx + 1) : '-1');
+      fd.append('next_keywords', nextSlide ? (nextSlide.keywords || []).join(', ') : '');
+      fd.append('trigger_word', document.getElementById('triggerInput').value || 'next');
+      fd.append('source_lang', speakLang);
+      fd.append('translate_to', translateTo);
+      try {
+        const data = await (await fetch('/api/rescue_text', { method: 'POST', body: fd })).json();
+        data.duration = Math.max(1.8, text.split(/\s+/).length * 0.38);
+        applyTranscriptResult(data);
+      } catch (err) { console.error(err); }
+    }
+
+    function updateModeButtons() {
+      const fm = document.getElementById('fastModeBtn'), sg = document.getElementById('speakerGateBtn');
+      const t = I18N[currentUILang];
+      if (fm) {
+        fm.classList.toggle('active-toggle', !useWhisper());
+        fm.textContent = useWhisper() ? t.whisperMode : t.fastMode;
+      }
+      if (sg) {
+        sg.classList.toggle('active-toggle', speakerGateOn);
+        sg.textContent = speakerGateOn ? t.myVoiceOn : t.myVoiceOff;
+      }
+    }
+    function toggleFastMode() {
+      if (!SR_SUPPORTED) { alert('Fast mode requires Google Chrome or Microsoft Edge.'); return; }
+      fastMode = !fastMode;
+      try { localStorage.setItem('ab_fast_mode', fastMode ? '1' : '0'); } catch (_) {}
+      updateModeButtons();
+    }
+    function toggleSpeakerGate() {
+      if (!speakerGateOn && !speakerEnrolled) { openSpeakerModal(); return; }
+      speakerGateOn = !speakerGateOn; speakerHold = false; speakerOk = true;
+      try { localStorage.setItem('ab_speaker_gate', speakerGateOn ? '1' : '0'); } catch (_) {}
+      updateModeButtons();
+    }
+
+    async function launchDesktopOverlay() {
+      const btn = document.getElementById('btnLaunchOverlay');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Loading...';
+      btn.disabled = true;
+      document.getElementById('rescueStatusToast').textContent = '⏳ Launching Desktop Transparent Overlay...';
+
+      try {
+        const res = await fetch('/api/overlay_launch?force=true', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById('rescueStatusToast').textContent = '✅ ' + (data.message || 'Desktop Overlay Launched Successfully');
+          btn.innerHTML = '✅ Overlay Active';
+        } else {
+          document.getElementById('rescueStatusToast').textContent = '🪟 Opened clean subtitle screen in new window';
+          window.open('/captions', 'accentbridge_captions', 'width=1280,height=360');
+        }
+      } catch (err) {
+        window.open('/captions', 'accentbridge_captions', 'width=1280,height=360');
+        document.getElementById('rescueStatusToast').textContent = '🪟 Opened clean subtitle screen in new window';
+      } finally {
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }, 2200);
+      }
+    }
+
+    let spkRec = false, spkCtx = null, spkStream = null, spkNode = null, spkBufs = [], spkTimer = null, spkStart = 0;
+    async function refreshSpeakerStatus() {
+      try {
+        const st = await (await fetch('/api/speaker_status')).json();
+        speakerEnrolled = st.enrolled;
+        document.getElementById('spkStatus').textContent = st.enrolled ? '✅ Enrolled' : 'Not enrolled';
+        document.getElementById('spkLevel').value = st.level;
+      } catch (_) {}
+      updateModeButtons();
+    }
+    function openSpeakerModal() { document.getElementById('speakerModal').classList.add('open'); refreshSpeakerStatus(); }
+    function closeSpeakerModal() { document.getElementById('speakerModal').classList.remove('open'); }
+    async function toggleSpeakerEnroll() {
+      const btn = document.getElementById('spkRecBtn'), msg = document.getElementById('spkMsg');
+      if (!spkRec) {
+        spkStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+        spkCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const src = spkCtx.createMediaStreamSource(spkStream);
+        spkNode = spkCtx.createScriptProcessor(4096, 1, 1);
+        spkBufs = [];
+        spkNode.onaudioprocess = (e) => { if (spkRec) spkBufs.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+        src.connect(spkNode); spkNode.connect(spkCtx.destination);
+        spkRec = true; spkStart = Date.now();
+        btn.classList.add('recording');
+        spkTimer = setInterval(() => {
+          const sec = Math.floor((Date.now() - spkStart) / 1000);
+          btn.textContent = sec < 8 ? `⏺ Recording (${sec}s / 8s min)` : `⏹ Stop & Save Profile (${sec}s)`;
+        }, 250);
+        msg.textContent = 'Read the paragraph above in your normal presentation voice.';
+      } else {
+        spkRec = false; clearInterval(spkTimer);
+        btn.classList.remove('recording');
+        spkNode.disconnect(); spkStream.getTracks().forEach(t => t.stop()); spkCtx.close();
+        const total = spkBufs.reduce((a, c) => a + c.length, 0);
+        const merged = new Float32Array(total); let off = 0;
+        for (const c of spkBufs) { merged.set(c, off); off += c.length; }
+        btn.textContent = '⏳ Saving voice profile...';
+        const fd = new FormData(); fd.append('audio', encodeWavBlob(merged, 16000), 'enroll.wav');
+        try {
+          const r = await (await fetch('/api/enroll_speaker', { method: 'POST', body: fd })).json();
+          msg.textContent = r.message;
+          if (r.ok && !speakerGateOn) { speakerGateOn = true; try { localStorage.setItem('ab_speaker_gate', '1'); } catch (_) {} }
+        } catch (err) { msg.textContent = 'Enrollment failed: ' + err; }
+        btn.textContent = I18N[currentUILang].spkBtnRecord;
+        refreshSpeakerStatus();
+      }
+    }
+    async function saveSpeakerLevel() {
+      const fd = new FormData(); fd.append('level', document.getElementById('spkLevel').value);
+      await fetch('/api/speaker_settings', { method: 'POST', body: fd });
+    }
+    async function clearSpeakerProfile() {
+      const fd = new FormData(); fd.append('clear', '1');
+      await fetch('/api/speaker_settings', { method: 'POST', body: fd });
+      speakerGateOn = false; try { localStorage.setItem('ab_speaker_gate', '0'); } catch (_) {}
+      document.getElementById('spkMsg').textContent = 'Voice profile cleared.';
+      refreshSpeakerStatus();
+    }
+
+    async function sendAudioChunkToAI(float32Array) {
+      if (float32Array.length < 5600 || !slides.length) return;
+      const s = slides[currentSlideIdx];
+      const fd = new FormData();
+      fd.append('audio', encodeWavBlob(float32Array, 16000), 'chunk.wav');
+      fd.append('slide_title', s.title || '');
+      fd.append('slide_text', (s.script || '') + '\n' + (s.text || ''));
+      fd.append('keywords', slideMagnetActive ? (s.keywords || []).join(', ') : '');
+      const nextSlide = (currentSlideIdx + 1 < slides.length) ? slides[currentSlideIdx + 1] : null;
+      fd.append('next_slide_idx', nextSlide ? String(currentSlideIdx + 1) : '-1');
+      fd.append('next_keywords', nextSlide ? (nextSlide.keywords || []).join(', ') : '');
+      fd.append('trigger_word', document.getElementById('triggerInput').value || 'next');
+      fd.append('speaker_gate', speakerGateOn ? '1' : '0');
+      fd.append('translate_to', translateTo);
+
+      try {
+        const res = await fetch('/api/transcribe', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.speaker_rejected) { showSpeakerRejected(data.speaker_score); return; }
+
+        data.duration = data.duration || 2;
+        applyTranscriptResult(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function applyTranscriptResult(data) {
+        if (data.triggered_next && Date.now() - lastTriggerTs >= 2200) {
+          lastTriggerTs = Date.now();
+          const badgeTxt = data.auto_advance_reason ? 'AUTO-SYNC' : (document.getElementById('triggerInput').value || 'NEXT').toUpperCase();
+          triggerNextSlideVisual(badgeTxt);
+          if (data.auto_advance_reason) {
+            document.getElementById('rescueStatusToast').textContent = data.auto_advance_reason;
+          }
+        }
+        if (!data.subtitle) return;
+
+        if (!slideMagnetActive || isCasualSpeech(data.subtitle)) {
+          latestConfirmedHtml = data.subtitle;
+          const trHtml = data.translation ? `<div style="font-size:0.62em;color:var(--accent-cyan);margin-top:6px;">🌐 ${data.translation.replace(/[<>&]/g, '')}</div>` : '';
+          document.getElementById('liveSubtitleDisplay').innerHTML = data.subtitle + trHtml;
+          document.getElementById('rescueStatusToast').textContent = '🎙️ Transcribed naturally (No slide anchor)';
+          subtitleHistory.push({ slide: currentSlideIdx + 1, text: data.subtitle, duration: data.duration });
+          captionChannel.postMessage({ type: 'final', text: data.subtitle, translation: data.translation || '', rescued: [] });
+          document.getElementById('historyStrip').innerHTML = subtitleHistory.slice(-3).map(h => `<div>[Slide ${h.slide}] ${h.text}</div>`).join('');
+          return;
+        }
+
+        advanceTeleprompterByWords(data.subtitle);
+
+        if (tpCursor > 0 && scriptWords.length > 0) {
+          syncGreenWordsToSubtitle(data.translation);
+          return;
+        }
+
+        const rescuedTargets = new Set((data.rescued || []).flatMap(r => r.to.split(/\s+/)));
+        latestConfirmedHtml = data.subtitle.split(/\s+/).map(w =>
+          rescuedTargets.has(w.toLowerCase()) ? `<span class="rescued-word">${w} ✨</span>` : w
+        ).join(' ');
+
+        const trHtml = data.translation ? `<div style="font-size:0.62em;color:var(--accent-cyan);margin-top:6px;">🌐 ${data.translation.replace(/[<>&]/g, '')}</div>` : '';
+        document.getElementById('liveSubtitleDisplay').innerHTML = latestConfirmedHtml + trHtml;
+
+        if (data.rescued && data.rescued.length > 0) {
+          const pairs = data.rescued.map(r => `"${r.from}" → "${r.to}"`).join(', ');
+          document.getElementById('rescueStatusToast').textContent = `✨ Rescued to slide terms: ${pairs}`;
+        } else {
+          document.getElementById('rescueStatusToast').textContent = data.confidence ? `✅ Subtitle Confident (${data.confidence}%)` : '✅ Subtitle Confident';
+        }
+
+        subtitleHistory.push({ slide: currentSlideIdx + 1, text: data.translation ? `${data.subtitle} / ${data.translation}` : data.subtitle, duration: data.duration });
+        captionChannel.postMessage({ type: 'final', text: data.subtitle, translation: data.translation || '', rescued: Array.from(rescuedTargets) });
+        document.getElementById('historyStrip').innerHTML = subtitleHistory.slice(-3).map(h => `<div>[Slide ${h.slide}] ${h.text}</div>`).join('');
+    }
+
+    async function toggleLiveSession() {
+      const btn = document.getElementById('startBtn');
+      if (isLive) {
+        isLive = false;
+        btn.classList.remove('recording');
+        document.getElementById('startBtnIcon').textContent = '▶';
+        document.getElementById('startBtnText').textContent = I18N[currentUILang].startLive;
+        if (recognition) { recognition.onend = null; try { recognition.stop(); } catch (_) {} recognition = null; }
+        if (processorNode) processorNode.disconnect();
+        if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+        if (audioCtx) audioCtx.close();
+        updateWaveformVisual(0);
+        return;
+      }
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const source = audioCtx.createMediaStreamSource(mediaStream);
+        processorNode = audioCtx.createScriptProcessor(4096, 1, 1);
+
+        pcmChunks = []; preRollBuffer = []; speechFrames = 0; silenceFrames = 0; isSpeakingChunk = false;
+        document.getElementById('liveSubtitleDisplay').textContent = "🎙️ Listening to your presentation speech...";
+
+        processorNode.onaudioprocess = (e) => {
+          if (!isLive) return;
+          const input = new Float32Array(e.inputBuffer.getChannelData(0));
+          let sum = 0;
+          for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+          const rms = Math.sqrt(sum / input.length);
+          updateWaveformVisual(rms);
+
+          const flushChunk = () => {
+            const totalLen = pcmChunks.reduce((acc, c) => acc + c.length, 0);
+            const merged = new Float32Array(totalLen);
+            let off = 0;
+            for (const c of pcmChunks) { merged.set(c, off); off += c.length; }
+            pcmChunks = []; speechFrames = 0; silenceFrames = 0; isSpeakingChunk = false;
+            routeAudioChunk(merged);
+          };
+          if (rms > 0.007) {
+            if (!isSpeakingChunk) {
+              isSpeakingChunk = true;
+              pcmChunks = [...preRollBuffer];
+              onUtteranceStart();
+            }
+            pcmChunks.push(input);
+            speechFrames++;
+            silenceFrames = 0;
+            if (speakerGateOn && speechFrames === 4) {
+              const total = pcmChunks.reduce((a, c) => a + c.length, 0);
+              const early = new Float32Array(total); let o = 0;
+              for (const c of pcmChunks) { early.set(c, o); o += c.length; }
+              verifySpeakerChunk(early);
+            }
+            if (speechFrames >= 12) flushChunk();
+          } else {
+            preRollBuffer.push(input);
+            if (preRollBuffer.length > 4) preRollBuffer.shift();
+            if (isSpeakingChunk) {
+              pcmChunks.push(input);
+              silenceFrames++;
+              if (silenceFrames >= 2 || speechFrames >= 12) flushChunk();
+            }
+          }
+        };
+
+        source.connect(processorNode);
+        processorNode.connect(audioCtx.destination);
+        isLive = true;
+        btn.classList.add('recording');
+        document.getElementById('startBtnIcon').textContent = '⏹';
+        document.getElementById('startBtnText').textContent = I18N[currentUILang].stopLive;
+        latestConfirmedHtml = "";
+        startBrowserInterimSpeech();
+      } catch (err) {
+        alert('Please allow microphone access in your browser.');
+      }
+    }
+
+    function openCalibModal() { document.getElementById('calibModal').classList.add('open'); }
+    function closeCalibModal() { document.getElementById('calibModal').classList.remove('open'); }
+
+    async function toggleCalibrationRecord() {
+      const btn = document.getElementById('calibRecBtn');
+      const resBox = document.getElementById('calibResultBox');
+      const t = I18N[currentUILang];
+      if (!isCalibRec) {
+        calibStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        calibCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const src = calibCtx.createMediaStreamSource(calibStream);
+        calibNode = calibCtx.createScriptProcessor(4096, 1, 1);
+        calibBuffers = [];
+        calibNode.onaudioprocess = (e) => { if (isCalibRec) calibBuffers.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+        src.connect(calibNode); calibNode.connect(calibCtx.destination);
+        isCalibRec = true;
+        btn.classList.add('recording');
+        btn.textContent = t.calibBtnStop;
+        resBox.textContent = '🎙️ Recording your accent sample... Read the prompt above naturally.';
+      } else {
+        isCalibRec = false;
+        btn.classList.remove('recording');
+        btn.textContent = '⏳ Adapting LoRA model to your accent...';
+        calibNode.disconnect();
+        calibStream.getTracks().forEach(t => t.stop());
+        calibCtx.close();
+
+        const total = calibBuffers.reduce((a, c) => a + c.length, 0);
+        const merged = new Float32Array(total);
+        let off = 0;
+        for (const c of calibBuffers) { merged.set(c, off); off += c.length; }
+
+        const fd = new FormData();
+        fd.append('audio', encodeWavBlob(merged, 16000), 'calib.wav');
+        fd.append('sentence', calibSentence);
+
+        const res = await fetch('/api/calibrate_voice', { method: 'POST', body: fd });
+        const data = await res.json();
+        btn.textContent = '✅ Accent Calibrated!';
+        resBox.textContent = `Success! Before: "${data.before}" → Adapted to: "${data.after}"`;
+      }
+    }
+
+    function openDeckModal() { document.getElementById('deckModal').classList.add('open'); }
+    function closeDeckModal() { document.getElementById('deckModal').classList.remove('open'); }
+
+    function saveCurrentSlideEdits() {
+      if (!slides.length) return;
+      slides[currentSlideIdx].keywords = document.getElementById('customKeywordsModal').value.split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+      renderCurrentSlide();
+      closeDeckModal();
+    }
+
+    async function uploadAndParseDeck() {
+      const fd = new FormData();
+      const fileEl = document.getElementById('deckFileInput');
+      if (fileEl.files[0]) fd.append('file', fileEl.files[0]);
+      fd.append('rough_script', document.getElementById('roughScriptInput').value);
+      const res = await fetch('/api/upload_deck', { method: 'POST', body: fd });
+      const data = await res.json();
+      slides = data.slides || [];
+      currentSlideIdx = 0;
+      renderCurrentSlide();
+      closeDeckModal();
+    }
+
+    async function downloadSrt() {
+      const res = await fetch('/api/export_srt', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ segments: subtitleHistory }),
+      });
+      const blob = new Blob([await res.text()], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'accentbridge_live.srt';
+      a.click();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      if (e.key === 'ArrowRight') stepSlide(1);
+      if (e.key === 'ArrowLeft') stepSlide(-1);
+      if (e.key.toLowerCase() === 't') toggleTeleprompter();
+    });
+
+    function pushSlideInfo() {
+      const cur = slides[currentSlideIdx] || {};
+      captionChannel.postMessage({ type: 'slide', slide: document.getElementById('slideCounterBadge').textContent, acronyms: cur.acronyms || [] });
+    }
+    new MutationObserver(pushSlideInfo).observe(document.getElementById('slideCounterBadge'), { childList: true, subtree: true, characterData: true });
+    captionChannel.onmessage = (e) => { if (e.data && e.data.hello) pushSlideInfo(); };
+    function openCaptionWindow() {
+      const w = window.open('/captions', 'accentbridge_captions', 'width=1280,height=360');
+      if (!w) alert('Browser popup blocked. Please open http://localhost:7860/captions in a new tab.');
+    }
+
+    document.getElementById('speakLangSel').value = speakLang;
+    document.getElementById('translateSel').value = translateTo;
+    initStudio();
+    refreshSpeakerStatus();
+  </script>
+</body>
+</html>

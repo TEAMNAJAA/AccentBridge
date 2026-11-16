@@ -1,0 +1,39 @@
+# --- High-Speed CTranslate2 ASR + Silero Neural VAD Engine ---
+faster-whisper>=1.0.3
+ctranslate2>=4.3.0
+onnxruntime>=1.17.0
+
+# --- PyTorch + Fine-Tuning / LoRA & Speaker Verification ---
+torch>=2.1.0
+transformers>=4.40.0
+peft>=0.11.0
+safetensors>=0.4.2
+accelerate>=0.30.0
+datasets[audio]>=2.19.0
+jiwer>=3.0.0
+
+# --- Audio Processing & Direct VAD Microphone (Overlay) ---
+numpy>=1.24.0,<2.1.0
+scipy>=1.11.0
+librosa>=0.10.1
+soundfile>=0.12.1
+sounddevice>=0.4.6
+
+# --- Asian Phonetics & Translation ---
+pronouncing>=0.2.0
+deep-translator>=1.11.4
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+
+# --- Web Studio Server (FastAPI) ---
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-multipart>=0.0.9
+pydantic>=2.5.0
+
+# --- Slide Deck Parsing & Evaluation ---
+python-pptx>=0.6.23
+pypdf>=4.2.0
+python-docx>=1.1.0
+tqdm>=4.66.0
+matplotlib>=3.8.0
